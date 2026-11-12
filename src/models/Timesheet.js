@@ -35,20 +35,20 @@ timesheetSchema.index({ date: -1 });
 timesheetSchema.index({ employee: 1, date: -1 });
 
 /**
- * Working hours are Work-type hours only. Permission and Leave entries are
- * tracked in the grid but never counted towards the total working hours.
+ * Total working hours for a day. Permission and Leave entries are marked in the
+ * grid without a description, but they still count towards the total hours.
  */
 const sumWorkHours = (entries = []) =>
-  round2((entries || []).reduce((sum, e) => sum + (e.type === 'Work' ? e.hours || 0 : 0), 0));
+  round2((entries || []).reduce((sum, e) => sum + (e.hours || 0), 0));
 
-/** Mongo aggregation expression that sums Work hours straight from `$entries`. */
+/** Mongo aggregation expression that sums every entry's hours from `$entries`. */
 const workHoursExpr = {
   $sum: {
     $sum: {
       $map: {
         input: { $ifNull: ['$entries', []] },
         as: 'entry',
-        in: { $cond: [{ $eq: ['$$entry.type', 'Work'] }, '$$entry.hours', 0] },
+        in: '$$entry.hours',
       },
     },
   },

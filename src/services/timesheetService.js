@@ -16,8 +16,8 @@ const LEAVE_LOCK_MESSAGE = 'Timesheet entries are not allowed on leave days.';
 const populateEmployee = { path: 'employee', select: 'name email employeeCode department designation' };
 
 /**
- * Reads always report Work-only hours, so records saved before the
- * "Permission/Leave are not working hours" rule stay consistent.
+ * Reads always recompute the day total from the stored entries so it stays in
+ * sync with the current rule (Permission / Leave slots are counted too).
  */
 const withWorkHours = (ts) => (ts ? { ...ts, totalHours: Timesheet.sumWorkHours(ts.entries) } : ts);
 
