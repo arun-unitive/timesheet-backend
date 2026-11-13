@@ -111,15 +111,28 @@ const upcoming = async (user, withinDays = 90) => {
     .lean();
 };
 
-/** Employee's own leave history + comp-off balance. */
+/** Employee's own leave history + comp-off balance.
+ *
+ * Includes both individual leaves assigned to the employee and common
+ * (company-wide) leaves, since those apply to every employee. The comp-off
+ * balance only counts personally-granted comp-offs; common comp-offs are still
+ * listed as records because they are days off assigned to the employee.
+ */
 const myLeaves = async (user) => {
-  const leaves = await Leave.find({ employee: user._id }).sort({ startDate: -1 }).lean();
-  const compOff = leaves.filter((l) => l.leaveType === 'comp-off');
+  const leaves = await Leave.find({
+    $or: [{ employee: user._id }, { scope: 'common' }],
+  })
+    .sort({ startDate: -1 })
+    .lean();
+
+  const personalCompOff = leaves.filter((l) => l.leaveType === 'comp-off' && l.employee && String(l.employee) === String(user._id));
+  const allCompOff = leaves.filter((l) => l.leaveType === 'comp-off');
+
   return {
     leaves,
     compOff: {
-      balanceDays: round2(compOff.reduce((sum, l) => sum + l.days, 0)),
-      records: compOff,
+      balanceDays: round2(personalCompOff.reduce((sum, l) => sum + l.days, 0)),
+      records: allCompOff,
     },
   };
 };
